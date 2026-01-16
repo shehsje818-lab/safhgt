@@ -14,7 +14,7 @@ export enum UserRole {
 export interface IUser extends mongoose.Document {
   discordId: string;
   username: string;
-  email: string;
+  email?: string;
   avatar: string;
   role: UserRole;
   joinedAt: Date;
@@ -24,7 +24,7 @@ export interface IUser extends mongoose.Document {
 const userSchema = new mongoose.Schema<IUser>({
   discordId: { type: String, required: true, unique: true },
   username: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  email: { type: String, required: false, sparse: true },
   avatar: { type: String, default: '' },
   role: { 
     type: String, 

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { Application, ApplicationStatus } from '../models/Application.js';
 import { User } from '../models/User.js';
 import { AuditLog } from '../models/AuditLog.js';
-import { authenticateToken, isMainAdminOrOwner } from '../middleware/auth.js';
+import { authenticateToken, isAdminOrHigher } from '../middleware/auth.js';
 const router = Router();
 // Submit application
 router.post('/submit', authenticateToken, async (req, res) => {
@@ -68,7 +68,7 @@ router.get('/my-applications', authenticateToken, async (req, res) => {
     }
 });
 // Get all applications (admin only)
-router.get('/all', authenticateToken, isMainAdminOrOwner, async (req, res) => {
+router.get('/all', authenticateToken, isAdminOrHigher, async (req, res) => {
     try {
         const { status, position, page = 1, limit = 20 } = req.query;
         const skip = (page - 1) * limit;
@@ -99,7 +99,7 @@ router.get('/all', authenticateToken, isMainAdminOrOwner, async (req, res) => {
     }
 });
 // Review application (admin only)
-router.put('/:id/review', authenticateToken, isMainAdminOrOwner, async (req, res) => {
+router.put('/:id/review', authenticateToken, isAdminOrHigher, async (req, res) => {
     try {
         const { status, notes } = req.body;
         const applicationId = req.params.id;

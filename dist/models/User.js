@@ -13,7 +13,7 @@ export var UserRole;
 const userSchema = new mongoose.Schema({
     discordId: { type: String, required: true, unique: true },
     username: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    email: { type: String, required: false, sparse: true },
     avatar: { type: String, default: '' },
     role: {
         type: String,

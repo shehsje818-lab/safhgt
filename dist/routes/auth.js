@@ -79,9 +79,9 @@ router.get('/discord/callback', async (req, res) => {
             user = new User({
                 discordId: discordUser.id,
                 username: discordUser.username,
-                email: discordUser.email,
+                email: discordUser.email || '',
                 avatar: discordUser.avatar,
-                role: 'member'
+                role: 'default'
             });
             await user.save();
             console.log('✅ User created');
@@ -182,9 +182,9 @@ router.post('/discord/callback', async (req, res) => {
             user = new User({
                 discordId: discordUser.id,
                 username: discordUser.username,
-                email: discordUser.email,
+                email: discordUser.email || '',
                 avatar: discordUser.avatar,
-                role: 'member'
+                role: 'default'
             });
             await user.save();
         }
