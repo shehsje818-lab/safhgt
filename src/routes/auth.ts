@@ -126,7 +126,7 @@ router.get('/discord/url', (req: AuthRequest, res: Response) => {
   const clientID = config.DISCORD_CLIENT_ID;
   const redirectURL = encodeURIComponent(config.DISCORD_CALLBACK_URL);
   const scope = encodeURIComponent('identify email');
-  const url = `https://discord.com/api/oauth2/authorize?client_id=${clientID}&redirect_uri=${redirectURL}&response_type=code&scope=${scope}`;
+  const url = `https://discord.com/oauth2/authorize?client_id=${clientID}&response_type=code&redirect_uri=${redirectURL}&scope=${scope}`;
   res.json({ url });
 });
 
