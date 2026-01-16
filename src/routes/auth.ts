@@ -97,7 +97,7 @@ router.get(
         user = new User({
           discordId: discordUser.id,
           username: discordUser.username,
-          email: discordUser.email,
+            email: discordUser.email || '',
           avatar: discordUser.avatar,
           role: 'default'
         });
@@ -221,7 +221,7 @@ router.post(
         user = new User({
           discordId: discordUser.id,
           username: discordUser.username,
-          email: discordUser.email,
+          email: discordUser.email || '',
           avatar: discordUser.avatar,
           role: 'default'
         });

@@ -32,7 +32,7 @@ passport.use(
           user = new User({
             discordId: profile.id,
             username: profile.username,
-            email: profile.email,
+            email: profile.email || '',
             avatar: profile.avatar,
             role: UserRole.DEFAULT
           });
@@ -40,7 +40,7 @@ passport.use(
         } else {
           // Update user info
           user.username = profile.username;
-          user.email = profile.email;
+          user.email = profile.email || '';
           user.avatar = profile.avatar;
           await user.save();
         }
