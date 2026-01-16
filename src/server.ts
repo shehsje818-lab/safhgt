@@ -27,14 +27,15 @@ mongoose.connect(config.MONGODB_URI)
     process.exit(1);
   });
 
-// Middleware - OPEN CORS for debugging
+// Middleware - CORS
 app.use(cors({
   origin: '*',
-  credentials: false,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['*'],
-  preflightContinue: true,
 }));
+
+// Explicit OPTIONS handler
+app.options('*', cors());
 
 app.use(express.json());
 
