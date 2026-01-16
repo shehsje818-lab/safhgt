@@ -29,8 +29,22 @@ mongoose.connect(config.MONGODB_URI)
 
 // Middleware
 app.use(cors({
-  origin: config.FRONTEND_URL,
-  credentials: true
+  origin: function(origin, callback) {
+    // Normalize the frontend URL by removing trailing slash
+    const allowedOrigin = config.FRONTEND_URL.replace(/\/$/, '');
+    
+    // Allow the normalized origin or if no origin is provided (e.g., mobile apps, Postman)
+    if (!origin || origin === allowedOrigin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  preflightContinue: false,
+  optionsSuccessStatus: 200
 }));
 
 app.use(express.json());
