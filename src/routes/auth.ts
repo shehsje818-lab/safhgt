@@ -7,7 +7,7 @@ import { AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 
-// Discord OAuth callback
+// Discord OAuth callback (GET - from Discord redirect)
 router.get(
   '/discord/callback',
   passport.authenticate('discord', { failureRedirect: '/' }),
@@ -27,6 +27,32 @@ router.get(
       role: user.role,
       joinedAt: user.joinedAt
     })}`);
+  }
+);
+
+// Discord OAuth callback (POST - for frontend API calls)
+router.post(
+  '/discord/callback',
+  passport.authenticate('discord', { failureRedirect: '/' }),
+  (req: AuthRequest, res: Response) => {
+    const user = req.user;
+    const token = jwt.sign(
+      { userId: user._id, discordId: user.discordId },
+      config.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        avatar: user.avatar,
+        role: user.role,
+        joinedAt: user.joinedAt
+      }
+    });
   }
 );
 
