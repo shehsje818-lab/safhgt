@@ -43,6 +43,12 @@ router.post(
       }
 
       // Exchange code for access token
+      console.log('Exchanging code for token with params:', {
+        client_id: config.DISCORD_CLIENT_ID,
+        redirect_uri: config.DISCORD_CALLBACK_URL,
+        code: code.substring(0, 20) + '...'
+      });
+
       const response = await fetch('https://discord.com/api/oauth2/token', {
         method: 'POST',
         headers: {
@@ -57,13 +63,15 @@ router.post(
         }),
       });
 
+      const responseText = await response.text();
+      console.log('Discord token response status:', response.status);
+      console.log('Discord token response body:', responseText);
+
       if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Discord token exchange failed:', response.status, errorData);
-        throw new Error(`Failed to exchange code for token: ${response.status} - ${errorData}`);
+        throw new Error(`Discord rejected token exchange: ${response.status} - ${responseText}`);
       }
 
-      const tokenData = await response.json() as any;
+      const tokenData = JSON.parse(responseText) as any;
 
       // Get user info from Discord
       const userResponse = await fetch('https://discord.com/api/users/@me', {
