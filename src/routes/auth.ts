@@ -99,7 +99,7 @@ router.get(
           username: discordUser.username,
           email: discordUser.email,
           avatar: discordUser.avatar,
-          role: 'member'
+          role: 'default'
         });
         await user.save();
         console.log('✅ User created');
@@ -223,7 +223,7 @@ router.post(
           username: discordUser.username,
           email: discordUser.email,
           avatar: discordUser.avatar,
-          role: 'member'
+          role: 'default'
         });
         await user.save();
       } else {
