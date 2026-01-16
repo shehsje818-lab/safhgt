@@ -1,27 +1,12 @@
 import { Router } from 'express';
-import passport from 'passport';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
 import { config } from '../config/config.js';
 const router = Router();
 // Discord OAuth callback (GET - from Discord redirect)
-router.get('/discord/callback', passport.authenticate('discord', { failureRedirect: '/' }), (req, res) => {
-    const user = req.user;
-    const token = jwt.sign({ userId: user._id, discordId: user.discordId }, config.JWT_SECRET, { expiresIn: '7d' });
-    res.redirect(`${config.FRONTEND_URL}?token=${token}&user=${JSON.stringify({
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        avatar: user.avatar,
-        role: user.role,
-        joinedAt: user.joinedAt
-    })}`);
-});
-// Discord OAuth callback (POST - for frontend API calls)
-// This handles the actual code exchange from Discord
-router.post('/discord/callback', async (req, res) => {
+router.get('/discord/callback', async (req, res) => {
     try {
-        const { code } = req.body;
+        const { code } = req.query;
         if (!code) {
             return res.status(400).json({ error: 'No authorization code provided' });
         }
@@ -39,10 +24,93 @@ router.post('/discord/callback', async (req, res) => {
                 redirect_uri: config.DISCORD_CALLBACK_URL,
             }),
         });
+        const responseText = await response.text();
         if (!response.ok) {
-            throw new Error('Failed to exchange code for token');
+            console.error('Discord error:', response.status, responseText);
+            return res.redirect(`${config.FRONTEND_URL}?error=discord_auth_failed`);
         }
-        const tokenData = await response.json();
+        const tokenData = JSON.parse(responseText);
+        // Get user info from Discord
+        const userResponse = await fetch('https://discord.com/api/users/@me', {
+            headers: {
+                Authorization: `Bearer ${tokenData.access_token}`,
+            },
+        });
+        if (!userResponse.ok) {
+            console.error('Failed to get user info');
+            return res.redirect(`${config.FRONTEND_URL}?error=user_fetch_failed`);
+        }
+        const discordUser = await userResponse.json();
+        // Find or create user in database
+        let user = await User.findOne({ discordId: discordUser.id });
+        if (!user) {
+            user = new User({
+                discordId: discordUser.id,
+                username: discordUser.username,
+                email: discordUser.email,
+                avatar: discordUser.avatar,
+                role: 'member'
+            });
+            await user.save();
+        }
+        else {
+            user.username = discordUser.username;
+            user.email = discordUser.email;
+            user.avatar = discordUser.avatar;
+            await user.save();
+        }
+        // Generate JWT token
+        const jwtToken = jwt.sign({ userId: user._id, discordId: user.discordId }, config.JWT_SECRET, { expiresIn: '7d' });
+        // Redirect to frontend with token
+        const redirectUrl = `${config.FRONTEND_URL}?token=${jwtToken}&user=${encodeURIComponent(JSON.stringify({
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            avatar: user.avatar,
+            role: user.role,
+            joinedAt: user.joinedAt
+        }))}`;
+        res.redirect(redirectUrl);
+    }
+    catch (err) {
+        console.error('Discord callback error:', err);
+        res.redirect(`${config.FRONTEND_URL}?error=auth_failed`);
+    }
+});
+// Discord OAuth callback (POST - for frontend API calls)
+// This handles the actual code exchange from Discord
+router.post('/discord/callback', async (req, res) => {
+    try {
+        const { code } = req.body;
+        if (!code) {
+            return res.status(400).json({ error: 'No authorization code provided' });
+        }
+        // Exchange code for access token
+        console.log('Exchanging code for token with params:', {
+            client_id: config.DISCORD_CLIENT_ID,
+            redirect_uri: config.DISCORD_CALLBACK_URL,
+            code: code.substring(0, 20) + '...'
+        });
+        const response = await fetch('https://discord.com/api/oauth2/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                client_id: config.DISCORD_CLIENT_ID,
+                client_secret: config.DISCORD_CLIENT_SECRET,
+                code: code,
+                grant_type: 'authorization_code',
+                redirect_uri: config.DISCORD_CALLBACK_URL,
+            }),
+        });
+        const responseText = await response.text();
+        console.log('Discord token response status:', response.status);
+        console.log('Discord token response body:', responseText);
+        if (!response.ok) {
+            throw new Error(`Discord rejected token exchange: ${response.status} - ${responseText}`);
+        }
+        const tokenData = JSON.parse(responseText);
         // Get user info from Discord
         const userResponse = await fetch('https://discord.com/api/users/@me', {
             headers: {
@@ -96,7 +164,7 @@ router.get('/discord/url', (req, res) => {
     const clientID = config.DISCORD_CLIENT_ID;
     const redirectURL = encodeURIComponent(config.DISCORD_CALLBACK_URL);
     const scope = encodeURIComponent('identify email');
-    const url = `https://discord.com/api/oauth2/authorize?client_id=${clientID}&redirect_uri=${redirectURL}&response_type=code&scope=${scope}`;
+    const url = `https://discord.com/oauth2/authorize?client_id=${clientID}&response_type=code&redirect_uri=${redirectURL}&scope=${scope}`;
     res.json({ url });
 });
 // Get current user

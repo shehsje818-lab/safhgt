@@ -27,27 +27,13 @@ mongoose.connect(config.MONGODB_URI)
     process.exit(1);
   });
 
-// Middleware
+// Middleware - OPEN CORS for debugging
 app.use(cors({
-  origin: function(origin, callback) {
-    // Normalize the frontend URL by removing trailing slash
-    const allowedOrigin = config.FRONTEND_URL.replace(/\/$/, '');
-    
-    // Normalize incoming origin by removing trailing slash
-    const normalizedOrigin = origin ? origin.replace(/\/$/, '') : null;
-    
-    // Allow the normalized origin or if no origin is provided (e.g., mobile apps, Postman)
-    if (!origin || normalizedOrigin === allowedOrigin) {
-      callback(null, allowedOrigin);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  preflightContinue: false,
-  optionsSuccessStatus: 200
+  origin: '*',
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['*'],
+  preflightContinue: true,
 }));
 
 app.use(express.json());

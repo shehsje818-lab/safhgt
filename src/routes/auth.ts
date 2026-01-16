@@ -13,36 +13,53 @@ router.get(
   async (req: AuthRequest, res: Response) => {
     try {
       const { code } = req.query;
+      console.log('=== DISCORD CALLBACK GET ===');
+      console.log('Query params:', req.query);
+      console.log('Code received:', code ? 'YES' : 'NO');
 
       if (!code) {
+        console.log('ERROR: No code provided');
         return res.status(400).json({ error: 'No authorization code provided' });
       }
 
       // Exchange code for access token
+      console.log('Exchanging code for Discord token...');
+      const body = new URLSearchParams({
+        client_id: config.DISCORD_CLIENT_ID,
+        client_secret: config.DISCORD_CLIENT_SECRET,
+        code: code as string,
+        grant_type: 'authorization_code',
+        redirect_uri: config.DISCORD_CALLBACK_URL,
+      });
+      
+      console.log('Request params:', {
+        client_id: config.DISCORD_CLIENT_ID,
+        redirect_uri: config.DISCORD_CALLBACK_URL,
+        code: (code as string).substring(0, 20) + '...',
+      });
+
       const response = await fetch('https://discord.com/api/oauth2/token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: new URLSearchParams({
-          client_id: config.DISCORD_CLIENT_ID,
-          client_secret: config.DISCORD_CLIENT_SECRET,
-          code: code as string,
-          grant_type: 'authorization_code',
-          redirect_uri: config.DISCORD_CALLBACK_URL,
-        }),
+        body: body,
       });
 
       const responseText = await response.text();
+      console.log('Discord response status:', response.status);
+      console.log('Discord response:', responseText);
 
       if (!response.ok) {
-        console.error('Discord error:', response.status, responseText);
-        return res.redirect(`${config.FRONTEND_URL}?error=discord_auth_failed`);
+        console.error('❌ Discord token exchange FAILED');
+        return res.status(500).json({ error: `Discord error: ${response.status} - ${responseText}` });
       }
 
       const tokenData = JSON.parse(responseText) as any;
+      console.log('✅ Got Discord access token');
 
       // Get user info from Discord
+      console.log('Fetching user info from Discord...');
       const userResponse = await fetch('https://discord.com/api/users/@me', {
         headers: {
           Authorization: `Bearer ${tokenData.access_token}`,
@@ -50,16 +67,19 @@ router.get(
       });
 
       if (!userResponse.ok) {
-        console.error('Failed to get user info');
-        return res.redirect(`${config.FRONTEND_URL}?error=user_fetch_failed`);
+        console.error('❌ Failed to get Discord user info');
+        return res.status(500).json({ error: 'Failed to get user info' });
       }
 
       const discordUser = await userResponse.json() as any;
+      console.log('✅ Got Discord user:', discordUser.username);
 
       // Find or create user in database
+      console.log('Looking up user in database...');
       let user = await User.findOne({ discordId: discordUser.id });
 
       if (!user) {
+        console.log('Creating new user...');
         user = new User({
           discordId: discordUser.id,
           username: discordUser.username,
@@ -68,7 +88,9 @@ router.get(
           role: 'member'
         });
         await user.save();
+        console.log('✅ User created');
       } else {
+        console.log('✅ User found, updating...');
         user.username = discordUser.username;
         user.email = discordUser.email;
         user.avatar = discordUser.avatar;
@@ -82,6 +104,8 @@ router.get(
         { expiresIn: '7d' }
       );
 
+      console.log('✅ Generated JWT token');
+
       // Redirect to frontend with token
       const redirectUrl = `${config.FRONTEND_URL}?token=${jwtToken}&user=${encodeURIComponent(JSON.stringify({
         id: user._id,
@@ -92,10 +116,12 @@ router.get(
         joinedAt: user.joinedAt
       }))}`;
 
+      console.log('✅ Redirecting to:', config.FRONTEND_URL);
       res.redirect(redirectUrl);
     } catch (err: any) {
-      console.error('Discord callback error:', err);
-      res.redirect(`${config.FRONTEND_URL}?error=auth_failed`);
+      console.error('❌ Discord callback error:', err.message);
+      console.error(err);
+      res.status(500).json({ error: 'Auth failed: ' + err.message });
     }
   }
 );
