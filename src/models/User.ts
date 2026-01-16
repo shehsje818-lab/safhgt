@@ -24,7 +24,7 @@ export interface IUser extends mongoose.Document {
 const userSchema = new mongoose.Schema<IUser>({
   discordId: { type: String, required: true, unique: true },
   username: { type: String, required: true },
-  email: { type: String, required: false, sparse: true },
+  email: { type: String, required: false, sparse: true, unique: false },
   avatar: { type: String, default: '' },
   role: { 
     type: String, 
