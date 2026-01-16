@@ -58,7 +58,9 @@ router.post(
       });
 
       if (!response.ok) {
-        throw new Error('Failed to exchange code for token');
+        const errorData = await response.text();
+        console.error('Discord token exchange failed:', response.status, errorData);
+        throw new Error(`Failed to exchange code for token: ${response.status} - ${errorData}`);
       }
 
       const tokenData = await response.json() as any;
