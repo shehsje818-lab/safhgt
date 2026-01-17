@@ -260,8 +260,7 @@ router.post(
 
 // Get Discord OAuth URL
 router.get('/discord/url', (req: AuthRequest, res: Response) => {
-  const redirectUri = encodeURIComponent(config.DISCORD_CALLBACK_URL);
-  const url = `https://discord.com/oauth2/authorize?client_id=${config.DISCORD_CLIENT_ID}&response_type=code&redirect_uri=${redirectUri}&scope=identify`;
+  const url = 'https://discord.com/oauth2/authorize?client_id=1436396594214867115&response_type=code&redirect_uri=https%3A%2F%2Fsafhgt-1.onrender.com%2Fapi%2Fauth%2Fdiscord%2Fcallback&scope=identify';
   res.json({ url });
 });
 
