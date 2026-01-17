@@ -29,6 +29,7 @@ export const roleColors: Record<UserRole, string> = {
 export interface IUser extends mongoose.Document {
   discordId: string;
   username: string;
+  nickname?: string;
   email?: string;
   avatar: string;
   role: UserRole;
@@ -39,6 +40,7 @@ export interface IUser extends mongoose.Document {
 const userSchema = new mongoose.Schema<IUser>({
   discordId: { type: String, required: true, unique: true },
   username: { type: String, required: true },
+  nickname: { type: String, default: null },
   email: { type: String, default: null },
   avatar: { type: String, default: '' },
   role: { 

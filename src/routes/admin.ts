@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { User, UserRole } from '../models/User.js';
+import { User, UserRole, roleColors } from '../models/User.js';
 import { AuthRequest, authenticateToken, isMainAdminOrOwner } from '../middleware/auth.js';
 import { AuditLog } from '../models/AuditLog.js';
 import { Application } from '../models/Application.js';
@@ -24,8 +24,20 @@ router.get('/users', authenticateToken, isMainAdminOrOwner, async (req: AuthRequ
 
     const total = await User.countDocuments(query);
 
+    const usersWithColors = users.map(user => ({
+      _id: user._id,
+      username: user.username,
+      nickname: user.nickname,
+      email: user.email,
+      avatar: user.avatar,
+      role: user.role,
+      color: roleColors[user.role as UserRole],
+      joinedAt: user.joinedAt,
+      updatedAt: user.updatedAt
+    }));
+
     res.json({
-      users,
+      users: usersWithColors,
       pagination: {
         total,
         page,

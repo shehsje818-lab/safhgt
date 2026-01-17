@@ -22,56 +22,35 @@ router.get(
         return res.status(400).json({ error: 'No authorization code provided' });
       }
 
-      // Try multiple redirect URIs (might be frontend or server)
-      const redirectUris = [
-        config.DISCORD_CALLBACK_URL,
-        `${config.FRONTEND_URL}/auth/discord/callback`,
-        'https://safhgt.onrender.com/api/auth/discord/callback'
-      ];
+      console.log(`Exchanging code with redirect_uri: ${config.DISCORD_CALLBACK_URL}`);
+      
+      const body = new URLSearchParams({
+        client_id: config.DISCORD_CLIENT_ID,
+        client_secret: config.DISCORD_CLIENT_SECRET,
+        code: code as string,
+        grant_type: 'authorization_code',
+        redirect_uri: config.DISCORD_CALLBACK_URL,
+      });
 
-      let tokenData: any = null;
-      let lastError = '';
+      const response = await fetch('https://discord.com/api/oauth2/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: body,
+      });
 
-      for (const redirectUri of redirectUris) {
-        try {
-          console.log(`Trying redirect_uri: ${redirectUri}`);
-          
-          const body = new URLSearchParams({
-            client_id: config.DISCORD_CLIENT_ID,
-            client_secret: config.DISCORD_CLIENT_SECRET,
-            code: code as string,
-            grant_type: 'authorization_code',
-            redirect_uri: redirectUri,
-          });
+      const responseText = await response.text();
+      console.log('Response status:', response.status);
+      console.log('Response:', responseText);
 
-          const response = await fetch('https://discord.com/api/oauth2/token', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: body,
-          });
-
-          const responseText = await response.text();
-          console.log(`Response status for ${redirectUri}:`, response.status);
-          console.log(`Response:`, responseText);
-
-          if (response.ok) {
-            tokenData = JSON.parse(responseText);
-            console.log(`✅ Success with redirect_uri: ${redirectUri}`);
-            break;
-          } else {
-            lastError = responseText;
-          }
-        } catch (err: any) {
-          console.log(`Failed with ${redirectUri}:`, err.message);
-        }
+      if (!response.ok) {
+        console.error('❌ Failed to exchange code with Discord');
+        return res.status(500).json({ error: `Discord error: ${responseText}` });
       }
 
-      if (!tokenData) {
-        console.error('❌ All redirect URIs failed. Last error:', lastError);
-        return res.status(500).json({ error: `Discord error: ${lastError}` });
-      }
+      const tokenData = JSON.parse(responseText);
+      console.log('✅ Successfully exchanged code');
 
       // Get user info from Discord
       console.log('Fetching user info from Discord...');
@@ -158,54 +137,33 @@ router.post(
         return res.status(400).json({ error: 'No authorization code provided' });
       }
 
-      // Try multiple redirect URIs
-      const redirectUris = [
-        config.DISCORD_CALLBACK_URL,
-        `${config.FRONTEND_URL}/auth/discord/callback`,
-        'https://safhgt.onrender.com/api/auth/discord/callback'
-      ];
+      console.log(`Exchanging code with redirect_uri: ${config.DISCORD_CALLBACK_URL}`);
+      
+      const response = await fetch('https://discord.com/api/oauth2/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: config.DISCORD_CLIENT_ID,
+          client_secret: config.DISCORD_CLIENT_SECRET,
+          code: code,
+          grant_type: 'authorization_code',
+          redirect_uri: config.DISCORD_CALLBACK_URL,
+        }),
+      });
 
-      let tokenData: any = null;
-      let lastError = '';
+      const responseText = await response.text();
+      console.log('Response status:', response.status);
+      console.log('Response:', responseText);
 
-      for (const redirectUri of redirectUris) {
-        try {
-          console.log(`Trying redirect_uri: ${redirectUri}`);
-          
-          const response = await fetch('https://discord.com/api/oauth2/token', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-              client_id: config.DISCORD_CLIENT_ID,
-              client_secret: config.DISCORD_CLIENT_SECRET,
-              code: code,
-              grant_type: 'authorization_code',
-              redirect_uri: redirectUri,
-            }),
-          });
-
-          const responseText = await response.text();
-          console.log(`Response status for ${redirectUri}:`, response.status);
-          console.log(`Response:`, responseText);
-
-          if (response.ok) {
-            tokenData = JSON.parse(responseText);
-            console.log(`✅ Success with redirect_uri: ${redirectUri}`);
-            break;
-          } else {
-            lastError = responseText;
-          }
-        } catch (err: any) {
-          console.log(`Failed with ${redirectUri}:`, err.message);
-        }
+      if (!response.ok) {
+        console.error('❌ Failed to exchange code with Discord');
+        return res.status(500).json({ error: `Discord error: ${responseText}` });
       }
 
-      if (!tokenData) {
-        console.error('❌ All redirect URIs failed. Last error:', lastError);
-        return res.status(500).json({ error: `Discord error: ${lastError}` });
-      }
+      const tokenData = JSON.parse(responseText);
+      console.log('✅ Successfully exchanged code');
 
       // Get user info from Discord
       const userResponse = await fetch('https://discord.com/api/users/@me', {
@@ -269,7 +227,8 @@ router.post(
 
 // Get Discord OAuth URL
 router.get('/discord/url', (req: AuthRequest, res: Response) => {
-  const url = 'https://discord.com/oauth2/authorize?client_id=1436396594214867115&response_type=code&redirect_uri=https%3A%2F%2Fsafhgt.onrender.com%2Fapi%2Fauth%2Fdiscord%2Fcallback&scope=identify';
+  const redirectUri = encodeURIComponent(config.DISCORD_CALLBACK_URL);
+  const url = `https://discord.com/oauth2/authorize?client_id=${config.DISCORD_CLIENT_ID}&response_type=code&redirect_uri=${redirectUri}&scope=identify+email`;
   res.json({ url });
 });
 
