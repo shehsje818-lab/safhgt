@@ -18,7 +18,8 @@ router.get('/discord/callback', async (req, res) => {
         const redirectUris = [
             config.DISCORD_CALLBACK_URL,
             `${config.FRONTEND_URL}/auth/discord/callback`,
-            'https://safhgt-1.onrender.com/api/auth/discord/callback'
+            'https://safhgt-1.onrender.com/api/auth/discord/callback',
+            'https://safhgt.onrender.com/api/auth/discord/callback'
         ];
         let tokenData = null;
         let lastError = '';
@@ -131,7 +132,9 @@ router.post('/discord/callback', async (req, res) => {
         // Try multiple redirect URIs
         const redirectUris = [
             config.DISCORD_CALLBACK_URL,
-            `${config.FRONTEND_URL}/auth/discord/callback`
+            `${config.FRONTEND_URL}/auth/discord/callback`,
+            'https://safhgt-1.onrender.com/api/auth/discord/callback',
+            'https://safhgt.onrender.com/api/auth/discord/callback'
         ];
         let tokenData = null;
         let lastError = '';
