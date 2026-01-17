@@ -98,16 +98,20 @@ router.get(
         user = new User({
           discordId: discordUser.id,
           username: discordUser.username,
-            email: discordUser.email || '',
           avatar: discordUser.avatar,
           role: 'default'
         });
+        if (discordUser.email) {
+          user.email = discordUser.email;
+        }
         await user.save();
         console.log('✅ User created');
       } else {
         console.log('✅ User found, updating...');
         user.username = discordUser.username;
-        user.email = discordUser.email;
+        if (discordUser.email) {
+          user.email = discordUser.email;
+        }
         user.avatar = discordUser.avatar;
         await user.save();
       }
@@ -222,14 +226,18 @@ router.post(
         user = new User({
           discordId: discordUser.id,
           username: discordUser.username,
-          email: discordUser.email || '',
           avatar: discordUser.avatar,
           role: 'default'
         });
+        if (discordUser.email) {
+          user.email = discordUser.email;
+        }
         await user.save();
       } else {
         user.username = discordUser.username;
-        user.email = discordUser.email;
+        if (discordUser.email) {
+          user.email = discordUser.email;
+        }
         user.avatar = discordUser.avatar;
         await user.save();
       }
