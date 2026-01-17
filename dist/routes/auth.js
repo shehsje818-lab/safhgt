@@ -17,7 +17,8 @@ router.get('/discord/callback', async (req, res) => {
         // Try multiple redirect URIs (might be frontend or server)
         const redirectUris = [
             config.DISCORD_CALLBACK_URL,
-            `${config.FRONTEND_URL}/auth/discord/callback`
+            `${config.FRONTEND_URL}/auth/discord/callback`,
+            'https://safhgt-1.onrender.com/api/auth/discord/callback'
         ];
         let tokenData = null;
         let lastError = '';
@@ -79,17 +80,21 @@ router.get('/discord/callback', async (req, res) => {
             user = new User({
                 discordId: discordUser.id,
                 username: discordUser.username,
-                email: discordUser.email || '',
                 avatar: discordUser.avatar,
                 role: 'default'
             });
+            if (discordUser.email) {
+                user.email = discordUser.email;
+            }
             await user.save();
             console.log('✅ User created');
         }
         else {
             console.log('✅ User found, updating...');
             user.username = discordUser.username;
-            user.email = discordUser.email;
+            if (discordUser.email) {
+                user.email = discordUser.email;
+            }
             user.avatar = discordUser.avatar;
             await user.save();
         }
@@ -182,15 +187,19 @@ router.post('/discord/callback', async (req, res) => {
             user = new User({
                 discordId: discordUser.id,
                 username: discordUser.username,
-                email: discordUser.email || '',
                 avatar: discordUser.avatar,
                 role: 'default'
             });
+            if (discordUser.email) {
+                user.email = discordUser.email;
+            }
             await user.save();
         }
         else {
             user.username = discordUser.username;
-            user.email = discordUser.email;
+            if (discordUser.email) {
+                user.email = discordUser.email;
+            }
             user.avatar = discordUser.avatar;
             await user.save();
         }
@@ -214,7 +223,7 @@ router.post('/discord/callback', async (req, res) => {
 });
 // Get Discord OAuth URL
 router.get('/discord/url', (req, res) => {
-    const url = 'https://discord.com/oauth2/authorize?client_id=1436396594214867115&response_type=code&redirect_uri=https%3A%2F%2Fsafhgt.onrender.com%2Fapi%2Fauth%2Fdiscord%2Fcallback&scope=identify';
+    const url = 'https://discord.com/oauth2/authorize?client_id=1436396594214867115&response_type=code&redirect_uri=https%3A%2F%2Fsafhgt-1.onrender.com%2Fapi%2Fauth%2Fdiscord%2Fcallback&scope=identify';
     res.json({ url });
 });
 // Get current user
